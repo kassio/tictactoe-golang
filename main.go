@@ -23,11 +23,11 @@ func printBoard(values [9]string) {
 	}
 }
 
-func winnerByRow(positions [9]string) (bool, string) {
+func findWinnerXY(values [9]string, posCalc func(int, int) int) (bool, string) {
 	winner := ""
-	for row := 0; row < 3; row++ {
-		for col := 0; col < 3; col++ {
-			value := positions[(row*3)+col]
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			value := values[posCalc(i, j)]
 			if winner == "" {
 				winner = value
 			} else if winner != value {
@@ -44,20 +44,14 @@ func winnerByRow(positions [9]string) (bool, string) {
 	return winner != "", winner
 }
 
-func winnerByCol(positions [9]string) (bool, string) {
+func findWinnerDiagonal(values [9]string, posCalc func(int) int) (bool, string) {
 	winner := ""
-	for col := 0; col < 3; col++ {
-		for row := 0; row < 3; row++ {
-			value := positions[(row*3)+col]
-			if winner == "" {
-				winner = value
-			} else if winner != value {
-				winner = ""
-				break
-			}
-		}
-
-		if winner != "" {
+	for i := 0; i < 3; i++ {
+		value := values[posCalc(i)]
+		if winner == "" {
+			winner = value
+		} else if winner != value {
+			winner = ""
 			break
 		}
 	}
@@ -65,33 +59,46 @@ func winnerByCol(positions [9]string) (bool, string) {
 	return winner != "", winner
 }
 
-func winnerByDiagonal(positions [9]string) (bool, string) {
-	winner := ""
-	for i := 0; i < 3; i++ {
-		value := positions[(i*3)+i]
-		if winner == "" {
-			winner = value
-		} else if winner != value {
-			winner = ""
-			break
-		}
+func findWinner(values [9]string) (bool, string) {
+	found, winner := findWinnerXY(values, func(i, j int) int {
+		return (i * 3) + j
+	})
+	if found {
+		return true, fmt.Sprintf("%s wins the game by row", winner)
 	}
 
-	if winner != "" {
-		return winner != "", winner
+	found, winner = findWinnerXY(values, func(i, j int) int {
+		return (j * 3) + i
+	})
+	if found {
+		return true, fmt.Sprintf("%s wins the game by column", winner)
 	}
 
-	for i := 0; i < 3; i++ {
-		value := positions[(i*3)+(2-i)]
-		if winner == "" {
-			winner = value
-		} else if winner != value {
-			winner = ""
-			break
-		}
+	found, winner = findWinnerDiagonal(values, func(i int) int {
+		return (i * 3) + i
+	})
+	if found {
+		return true, fmt.Sprintf("%s wins the game by diagonal", winner)
 	}
 
-	return winner != "", winner
+	found, winner = findWinnerDiagonal(values, func(i int) int {
+		return (i * 3) + (2 - i)
+	})
+	if found {
+		return true, fmt.Sprintf("%s wins the game by diagonal", winner)
+	}
+
+	return false, ""
+}
+
+func validateInput(in int, playedPositions [9]bool) (bool, string) {
+	if in < 0 || in > 8 {
+		return false, "Invalid position! Choose between 1 and 9"
+	} else if playedPositions[in] {
+		return false, "Position already taken!"
+	} else {
+		return true, ""
+	}
 }
 
 func main() {
@@ -100,7 +107,6 @@ func main() {
 	for i := range values {
 		values[i] = strconv.Itoa(i + 1)
 	}
-	fmt.Println(">", playedPositions)
 
 	printBoard(values)
 	for i := 0; i < 9; i++ {
@@ -111,9 +117,10 @@ func main() {
 		fmt.Scanf("%d", &position)
 		position-- // user inputs the position indexed by 1
 
-		if playedPositions[position] {
+		valid, errMsg := validateInput(position, playedPositions)
+		if !valid {
 			i--
-			fmt.Println("Position already taken! Try again")
+			fmt.Println(errMsg, "Try again")
 			continue
 		}
 
@@ -121,28 +128,17 @@ func main() {
 		values[position] = player
 		printBoard(values)
 
-		ended, winner := (winnerByRow(values))
-		if ended {
-			fmt.Printf("%s wins the game by row", winner)
-			return
-		}
-
-		ended, winner = (winnerByCol(values))
-		if ended {
-			fmt.Printf("%s wins the game by column", winner)
-			return
-		}
-
-		ended, winner = (winnerByDiagonal(values))
-		if ended {
-			fmt.Printf("%s wins the game by diagonal", winner)
+		found, winnerMsg := findWinner(values)
+		if found {
+			fmt.Printf(winnerMsg)
 			return
 		}
 	}
 
-	fmt.Println(`No one win,
-	no one lost,
-	at the end
-	we're all winners
-	who have lost`)
+	fmt.Println(
+		`No one win,
+		no one lost,
+		at the end
+		we're all winners
+		who have lost`)
 }
