@@ -5,9 +5,9 @@ import (
 	"strconv"
 )
 
-var players = ([]string{"x", "o"})
+var players = [2]string{"x", "o"}
 
-func print(values []string) {
+func printBoard(values [9]string) {
 	fmt.Print("\033[H\033[2J") // clears the screen
 
 	for i, value := range values {
@@ -23,16 +23,7 @@ func print(values []string) {
 	}
 }
 
-func initialPositions() []string {
-	values := make([]string, 9)
-	for i := range values {
-		values[i] = strconv.Itoa(i + 1)
-	}
-
-	return values
-}
-
-func winnerByRow(positions []string) (bool, string) {
+func winnerByRow(positions [9]string) (bool, string) {
 	winner := ""
 	for row := 0; row < 3; row++ {
 		for col := 0; col < 3; col++ {
@@ -53,7 +44,7 @@ func winnerByRow(positions []string) (bool, string) {
 	return winner != "", winner
 }
 
-func winnerByCol(positions []string) (bool, string) {
+func winnerByCol(positions [9]string) (bool, string) {
 	winner := ""
 	for col := 0; col < 3; col++ {
 		for row := 0; row < 3; row++ {
@@ -74,7 +65,7 @@ func winnerByCol(positions []string) (bool, string) {
 	return winner != "", winner
 }
 
-func winnerByDiagonal(positions []string) (bool, string) {
+func winnerByDiagonal(positions [9]string) (bool, string) {
 	winner := ""
 	for i := 0; i < 3; i++ {
 		value := positions[(i*3)+i]
@@ -105,10 +96,13 @@ func winnerByDiagonal(positions []string) (bool, string) {
 
 func main() {
 	var playedPositions [9]bool
-	values := initialPositions()
+	var values [9]string
+	for i := range values {
+		values[i] = strconv.Itoa(i + 1)
+	}
 	fmt.Println(">", playedPositions)
 
-	print(values)
+	printBoard(values)
 	for i := 0; i < 9; i++ {
 		player := players[i%2]
 		fmt.Printf("Player %s chose a position: ", player)
@@ -125,7 +119,7 @@ func main() {
 
 		playedPositions[position] = true
 		values[position] = player
-		print(values)
+		printBoard(values)
 
 		ended, winner := (winnerByRow(values))
 		if ended {
