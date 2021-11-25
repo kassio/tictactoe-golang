@@ -23,8 +23,8 @@ func printBoard(values [9]string) {
 	}
 }
 
-func findWinnerXY(values [9]string, posCalc func(int, int) int) (bool, string) {
-	winner := ""
+func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) string {
+	var winner string
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			value := values[posCalc(i, j)]
@@ -41,11 +41,15 @@ func findWinnerXY(values [9]string, posCalc func(int, int) int) (bool, string) {
 		}
 	}
 
-	return winner != "", winner
+	if winner != "" {
+		return fmt.Sprintf("%s wins the game by %s", winner, title)
+	}
+
+	return ""
 }
 
-func findWinnerDiagonal(values [9]string, posCalc func(int) int) (bool, string) {
-	winner := ""
+func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) string {
+	var winner string
 	for i := 0; i < 3; i++ {
 		value := values[posCalc(i)]
 		if winner == "" {
@@ -56,36 +60,41 @@ func findWinnerDiagonal(values [9]string, posCalc func(int) int) (bool, string) 
 		}
 	}
 
-	return winner != "", winner
+	if winner != "" {
+		return fmt.Sprintf("%s wins the game by %s", winner, title)
+	}
+
+	return ""
 }
 
 func findWinner(values [9]string) (bool, string) {
-	found, winner := findWinnerXY(values, func(i, j int) int {
+	var winner string
+	winner = findWinnerXY(values, "row", func(i, j int) int {
 		return (i * 3) + j
 	})
-	if found {
-		return true, fmt.Sprintf("%s wins the game by row", winner)
+	if winner != "" {
+		return true, winner
 	}
 
-	found, winner = findWinnerXY(values, func(i, j int) int {
+	winner = findWinnerXY(values, "column", func(i, j int) int {
 		return (j * 3) + i
 	})
-	if found {
-		return true, fmt.Sprintf("%s wins the game by column", winner)
+	if winner != "" {
+		return true, winner
 	}
 
-	found, winner = findWinnerDiagonal(values, func(i int) int {
+	winner = findWinnerDiagonal(values, "diagonal", func(i int) int {
 		return (i * 3) + i
 	})
-	if found {
-		return true, fmt.Sprintf("%s wins the game by diagonal", winner)
+	if winner != "" {
+		return true, winner
 	}
 
-	found, winner = findWinnerDiagonal(values, func(i int) int {
+	winner = findWinnerDiagonal(values, "diagonal", func(i int) int {
 		return (i * 3) + (2 - i)
 	})
-	if found {
-		return true, fmt.Sprintf("%s wins the game by diagonal", winner)
+	if winner != "" {
+		return true, winner
 	}
 
 	return false, ""
