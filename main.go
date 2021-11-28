@@ -124,7 +124,6 @@ func findWinner(values [9]string) (bool, string) {
 			winner = f
 		}
 	}
-	close(finders)
 
 	return winner.found, winner.msg
 }
