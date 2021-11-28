@@ -82,7 +82,7 @@ func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) <
 	return wc
 }
 
-func findWinner(values [9]string) (bool, string) {
+func findWinner(values [9]string) Winner {
 	finders := make(chan Winner)
 
 	go func() {
@@ -125,7 +125,7 @@ func findWinner(values [9]string) (bool, string) {
 		}
 	}
 
-	return winner.found, winner.msg
+	return winner
 }
 
 func validateInput(in int, values [9]string) (bool, string) {
@@ -164,9 +164,9 @@ func main() {
 		values[position] = player
 		printBoard(values)
 
-		found, winnerMsg := findWinner(values)
-		if found {
-			fmt.Printf(winnerMsg)
+		winner := findWinner(values)
+		if winner.found {
+			fmt.Printf(winner.msg)
 			return
 		}
 	}
