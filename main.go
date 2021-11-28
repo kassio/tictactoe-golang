@@ -7,6 +7,11 @@ import (
 
 var players = [2]string{"x", "o"}
 
+type Winner struct {
+	found bool
+	msg   string
+}
+
 func printBoard(values [9]string) {
 	fmt.Print("\033[H\033[2J") // clears the screen
 
@@ -23,11 +28,42 @@ func printBoard(values [9]string) {
 	}
 }
 
-func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) string {
-	var winner string
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
-			value := values[posCalc(i, j)]
+func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) <-chan Winner {
+	wc := make(chan Winner)
+	go func() {
+		var winner string
+		for i := 0; i < 3; i++ {
+			for j := 0; j < 3; j++ {
+				value := values[posCalc(i, j)]
+				if winner == "" {
+					winner = value
+				} else if winner != value {
+					winner = ""
+					break
+				}
+			}
+
+			if winner != "" {
+				break
+			}
+		}
+
+		if winner != "" {
+			wc <- Winner{msg: fmt.Sprintf("%s wins the game by %s", winner, title), found: true}
+		}
+
+		wc <- Winner{}
+	}()
+
+	return wc
+}
+
+func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) <-chan Winner {
+	wc := make(chan Winner)
+	go func() {
+		var winner string
+		for i := 0; i < 3; i++ {
+			value := values[posCalc(i)]
 			if winner == "" {
 				winner = value
 			} else if winner != value {
@@ -37,67 +73,60 @@ func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) st
 		}
 
 		if winner != "" {
-			break
+			wc <- Winner{msg: fmt.Sprintf("%s wins the game by %s", winner, title), found: true}
 		}
-	}
 
-	if winner != "" {
-		return fmt.Sprintf("%s wins the game by %s", winner, title)
-	}
+		wc <- Winner{}
+	}()
 
-	return ""
-}
-
-func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) string {
-	var winner string
-	for i := 0; i < 3; i++ {
-		value := values[posCalc(i)]
-		if winner == "" {
-			winner = value
-		} else if winner != value {
-			winner = ""
-			break
-		}
-	}
-
-	if winner != "" {
-		return fmt.Sprintf("%s wins the game by %s", winner, title)
-	}
-
-	return ""
+	return wc
 }
 
 func findWinner(values [9]string) (bool, string) {
-	var winner string
-	winner = findWinnerXY(values, "row", func(i, j int) int {
-		return (i * 3) + j
-	})
-	if winner != "" {
-		return true, winner
-	}
+	finders := make(chan Winner)
 
-	winner = findWinnerXY(values, "column", func(i, j int) int {
-		return (j * 3) + i
-	})
-	if winner != "" {
-		return true, winner
-	}
+	go func() {
+		found := <-findWinnerXY(values, "row", func(i, j int) int {
+			return (i * 3) + j
+		})
+		// fmt.Println("row", found)
+		finders <- found
+	}()
 
-	winner = findWinnerDiagonal(values, "diagonal", func(i int) int {
-		return (i * 3) + i
-	})
-	if winner != "" {
-		return true, winner
-	}
+	go func() {
+		found := <-findWinnerXY(values, "column", func(i, j int) int {
+			return (j * 3) + i
+		})
+		// fmt.Println("column", found)
+		finders <- found
+	}()
 
-	winner = findWinnerDiagonal(values, "diagonal", func(i int) int {
-		return (i * 3) + (2 - i)
-	})
-	if winner != "" {
-		return true, winner
-	}
+	go func() {
+		found := <-findWinnerDiagonal(values, "diagonal", func(i int) int {
+			return (i * 3) + i
+		})
+		// fmt.Println("diagonal1", found)
+		finders <- found
+	}()
 
-	return false, ""
+	go func() {
+		found := <-findWinnerDiagonal(values, "diagonal", func(i int) int {
+			return (i * 3) + (2 - i)
+		})
+		// fmt.Println("diagonal2", found)
+		finders <- found
+	}()
+
+	winner := Winner{}
+	for i := 0; i < 4; i++ {
+		f := <-finders
+		if f.found {
+			winner = f
+		}
+	}
+	close(finders)
+
+	return winner.found, winner.msg
 }
 
 func validateInput(in int, playedPositions [9]bool) (bool, string) {
