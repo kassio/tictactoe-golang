@@ -130,11 +130,12 @@ func findWinner(values [9]string) (bool, string) {
 }
 
 func validateInput(in int, playedPositions [9]bool) (bool, string) {
-	if in < 0 || in > 8 {
+	switch {
+	case in < 0 || in > 8:
 		return false, "Invalid position! Choose between 1 and 9"
-	} else if playedPositions[in] {
+	case playedPositions[in]:
 		return false, "Position already taken!"
-	} else {
+	default:
 		return true, ""
 	}
 }
