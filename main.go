@@ -11,8 +11,9 @@ type Winner struct {
 	found bool
 	msg   string
 }
+type board [9]string
 
-func printBoard(values [9]string) {
+func printBoard(values board) {
 	fmt.Print("\033[H\033[2J") // clears the screen
 
 	for i, value := range values {
@@ -28,7 +29,7 @@ func printBoard(values [9]string) {
 	}
 }
 
-func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) <-chan Winner {
+func findWinnerXY(values board, title string, posCalc func(int, int) int) <-chan Winner {
 	wc := make(chan Winner)
 	go func() {
 		var winner string
@@ -58,7 +59,7 @@ func findWinnerXY(values [9]string, title string, posCalc func(int, int) int) <-
 	return wc
 }
 
-func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) <-chan Winner {
+func findWinnerDiagonal(values board, title string, posCalc func(int) int) <-chan Winner {
 	wc := make(chan Winner)
 	go func() {
 		var winner string
@@ -82,37 +83,52 @@ func findWinnerDiagonal(values [9]string, title string, posCalc func(int) int) <
 	return wc
 }
 
-func findWinner(values [9]string) Winner {
+func findByRow(values board) <-chan Winner {
+	return findWinnerXY(values, "row", func(i, j int) int {
+		return (i * 3) + j
+	})
+}
+
+func findByColumn(values board) <-chan Winner {
+	return findWinnerXY(values, "column", func(i, j int) int {
+		return (j * 3) + i
+	})
+}
+
+func findByDiagonal1(values board) <-chan Winner {
+	return findWinnerDiagonal(values, "diagonal", func(i int) int {
+		return (i * 3) + i
+	})
+}
+func findByDiagonal2(values board) <-chan Winner {
+	return findWinnerDiagonal(values, "diagonal", func(i int) int {
+		return (i * 3) + (2 - i)
+	})
+}
+
+func findWinner(values board) Winner {
 	finders := make(chan Winner)
 
 	go func() {
-		found := <-findWinnerXY(values, "row", func(i, j int) int {
-			return (i * 3) + j
-		})
+		found := <-findByRow(values)
 		// fmt.Println("row", found)
 		finders <- found
 	}()
 
 	go func() {
-		found := <-findWinnerXY(values, "column", func(i, j int) int {
-			return (j * 3) + i
-		})
+		found := <-findByColumn(values)
 		// fmt.Println("column", found)
 		finders <- found
 	}()
 
 	go func() {
-		found := <-findWinnerDiagonal(values, "diagonal", func(i int) int {
-			return (i * 3) + i
-		})
+		found := <-findByDiagonal1(values)
 		// fmt.Println("diagonal1", found)
 		finders <- found
 	}()
 
 	go func() {
-		found := <-findWinnerDiagonal(values, "diagonal", func(i int) int {
-			return (i * 3) + (2 - i)
-		})
+		found := <-findByDiagonal2(values)
 		// fmt.Println("diagonal2", found)
 		finders <- found
 	}()
@@ -128,7 +144,7 @@ func findWinner(values [9]string) Winner {
 	return winner
 }
 
-func validateInput(in int, values [9]string) (bool, string) {
+func validateInput(in int, values board) (bool, string) {
 	switch {
 	case in < 0 || in > 8:
 		return false, "Invalid position! Choose between 1 and 9"
@@ -140,7 +156,7 @@ func validateInput(in int, values [9]string) (bool, string) {
 }
 
 func main() {
-	var values [9]string
+	var values board
 	for i := range values {
 		values[i] = strconv.Itoa(i + 1)
 	}
