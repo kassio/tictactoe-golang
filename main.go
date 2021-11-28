@@ -128,11 +128,11 @@ func findWinner(values [9]string) (bool, string) {
 	return winner.found, winner.msg
 }
 
-func validateInput(in int, playedPositions [9]bool) (bool, string) {
+func validateInput(in int, values [9]string) (bool, string) {
 	switch {
 	case in < 0 || in > 8:
 		return false, "Invalid position! Choose between 1 and 9"
-	case playedPositions[in]:
+	case values[in] == "x" || values[in] == "o":
 		return false, "Position already taken!"
 	default:
 		return true, ""
@@ -140,7 +140,6 @@ func validateInput(in int, playedPositions [9]bool) (bool, string) {
 }
 
 func main() {
-	var playedPositions [9]bool
 	var values [9]string
 	for i := range values {
 		values[i] = strconv.Itoa(i + 1)
@@ -155,14 +154,13 @@ func main() {
 		fmt.Scanf("%d", &position)
 		position-- // user inputs the position indexed by 1
 
-		valid, errMsg := validateInput(position, playedPositions)
+		valid, errMsg := validateInput(position, values)
 		if !valid {
 			i--
 			fmt.Println(errMsg, "Try again")
 			continue
 		}
 
-		playedPositions[position] = true
 		values[position] = player
 		printBoard(values)
 
