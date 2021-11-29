@@ -5,11 +5,11 @@ import (
 	"strconv"
 )
 
-type Winner struct {
-	found bool
-	msg   string
-}
 type board [9]string
+type Winner struct {
+	player string
+	title  string
+}
 
 func printBoard(values board) {
 	fmt.Print("\033[H\033[2J") // clears the screen
@@ -17,18 +17,18 @@ func printBoard(values board) {
 	for i, value := range values {
 		fmt.Printf(" %-1s ", value)
 
-		if i > 7 {
+		switch {
+		case i > 7:
 			fmt.Print("\n")
-		} else if (i+1)%3 == 0 {
+		case (i+1)%3 == 0:
 			fmt.Print("\n───┼───┼───\n")
-		} else {
+		default:
 			fmt.Print("│")
 		}
 	}
 }
 
-func findWinnerXY(values board, title string, posCalc func(int, int) int) Winner {
-	w := Winner{}
+func findWinnerXY(values board, posCalc func(int, int) int) string {
 	var player string
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
@@ -46,16 +46,10 @@ func findWinnerXY(values board, title string, posCalc func(int, int) int) Winner
 		}
 	}
 
-	if player != "" {
-		w.msg = fmt.Sprintf("%s wins the game by %s", player, title)
-		w.found = true
-	}
-
-	return w
+	return player
 }
 
-func findWinnerDiagonal(values board, posCalc func(int) int) Winner {
-	w := Winner{}
+func findWinnerDiagonal(values board, posCalc func(int) int) string {
 	var player string
 	for i := 0; i < 3; i++ {
 		value := values[posCalc(i)]
@@ -67,35 +61,37 @@ func findWinnerDiagonal(values board, posCalc func(int) int) Winner {
 		}
 	}
 
-	if player != "" {
-		w.msg = fmt.Sprintf("%s wins the game by diagonal", player)
-		w.found = true
-	}
-
-	return w
+	return player
 }
 
 func findByRow(values board) Winner {
-	return findWinnerXY(values, "row", func(i, j int) int {
+	player := findWinnerXY(values, func(i, j int) int {
 		return (i * 3) + j
 	})
+
+	return Winner{player: player, title: "row"}
 }
 
 func findByColumn(values board) Winner {
-	return findWinnerXY(values, "column", func(i, j int) int {
+	player := findWinnerXY(values, func(i, j int) int {
 		return (j * 3) + i
 	})
+
+	return Winner{player: player, title: "column"}
 }
 
 func findByDiagonal1(values board) Winner {
-	return findWinnerDiagonal(values, func(i int) int {
+	player := findWinnerDiagonal(values, func(i int) int {
 		return (i * 3) + i
 	})
+
+	return Winner{player: player, title: "diagonal"}
 }
 func findByDiagonal2(values board) Winner {
-	return findWinnerDiagonal(values, func(i int) int {
+	player := findWinnerDiagonal(values, func(i int) int {
 		return (i * 3) + (2 - i)
 	})
+	return Winner{player: player, title: "diagonal"}
 }
 
 func findWinner(values board) Winner {
@@ -109,7 +105,7 @@ func findWinner(values board) Winner {
 	winner := Winner{}
 	for i := 0; i < 4; i++ {
 		f := <-finders
-		if f.found {
+		if f.player != "" {
 			winner = f
 		}
 	}
@@ -157,9 +153,9 @@ func main() {
 
 		// it needs at least five rounds to have a winner
 		if i >= 4 {
-			winner := findWinner(values)
-			if winner.found {
-				fmt.Printf(winner.msg)
+			w := findWinner(values)
+			if w.player != "" {
+				fmt.Printf("%s wins the game by %s", w.player, w.title)
 				return
 			}
 		}
