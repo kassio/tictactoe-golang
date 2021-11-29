@@ -155,7 +155,7 @@ func main() {
 		if i >= 4 {
 			w := findWinner(values)
 			if w.player != "" {
-				fmt.Printf("%s wins the game by %s", w.player, w.title)
+				fmt.Printf("%s wins the game by %s\n", w.player, w.title)
 				return
 			}
 		}
